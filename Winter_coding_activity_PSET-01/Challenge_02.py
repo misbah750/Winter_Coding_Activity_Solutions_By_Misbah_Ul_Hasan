@@ -1,49 +1,59 @@
-def find_smallest_bag(log, pattern):
-    # Edge case: if empty, return empty
-    if not log or not pattern:
+from collections import Counter
+
+def password_recovery_window(log: str, pattern: str) -> str:
+    if not pattern or not log:
         return ""
     
-    # STEP 1: Count what we NEED
-    need = {}
-    for char in pattern:
-        need[char] = need.get(char, 0) + 1
+    # Figure out what characters we need and how many
+    pattern_count = Counter(pattern)
     
-    # STEP 2: Setup our variables
-    left = 0           # Left hand position
-    smallest = ""      # Best answer so far
-    have = {}          # What we currently have
-    complete = 0       # How many chars are complete
     
-    # STEP 3: Move RIGHT hand through the string
-    for right in range(len(log)):
-        # Pick up the character
-        char = log[right]
-        have[char] = have.get(char, 0) + 1
+    window_count = Counter()
+    
+    formed, required = 0, len(pattern_count)
+    result_range = [-1, -1]
+    min_window_len = float("inf")
+    left_ptr = 0
+    
+    for right_ptr in range(len(log)):
+        char = log[right_ptr]
+        window_count[char] += 1
         
-        # Did we complete this character?
-        if char in need and have[char] == need[char]:
-            complete += 1
+        # Did we just meet the requirement for this character?
+        if char in pattern_count and window_count[char] == pattern_count[char]:
+            formed += 1
         
-        # STEP 4: If we have everything, try to SHRINK
-        while complete == len(need):
-            # Save if this is better
-            window = log[left:right+1]
-            if smallest == "" or len(window) < len(smallest):
-                smallest = window
+        # Try to make the window smaller while it still works
+        while formed == required:
+            if (right_ptr - left_ptr + 1) < min_window_len:
+                result_range = [left_ptr, right_ptr]
+                min_window_len = right_ptr - left_ptr + 1
             
-            # Remove from left
-            left_char = log[left]
-            have[left_char] -= 1
+            left_char = log[left_ptr]
+            window_count[left_char] -= 1
             
-            # Did we break a requirement?
-            if left_char in need and have[left_char] < need[left_char]:
-                complete -= 1
+            if left_char in pattern_count and window_count[left_char] < pattern_count[left_char]:
+                formed -= 1
             
-            left += 1
+            left_ptr += 1
     
-    return smallest
+    l, r = result_range
+    return log[l:r+1] if min_window_len != float("inf") else ""
 
-# Test it!
+# Test case 1
 log = "ADOBECODEBANC"
 pattern = "ABC"
-print(find_smallest_bag(log, pattern))  
+print(f"Log: {log}, Pattern: {pattern}")
+print(f"Result: {password_recovery_window(log, pattern)}")
+
+# Test case 2
+log = "XYZBACXYZABC"
+pattern = "ABC"
+print(f"\nLog: {log}, Pattern: {pattern}")
+print(f"Result: {password_recovery_window(log, pattern)}")
+
+# Test case 3
+log = "HELLO"
+pattern = "LO"
+print(f"\nLog: {log}, Pattern: {pattern}")
+print(f"Result: {password_recovery_window(log, pattern)}")
